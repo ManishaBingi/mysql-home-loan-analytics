@@ -34,4 +34,50 @@ FROM Customers c
 JOIN Loans l ON c.customer_id = l.customer_id
 GROUP BY c.name
 ORDER BY total_amount DESC;
+-- 9. Highest Paying Customers (Total Payments Made)
+SELECT c.name, SUM(p.amount) AS total_paid
+FROM Customers c
+JOIN Loans l ON c.customer_id = l.customer_id
+JOIN Payments p ON l.loan_id = p.loan_id
+GROUP BY c.name
+ORDER BY total_paid DESC
+LIMIT 5;
+-- 10. Loans Near Completion (≥80% Paid)
+SELECT l.loan_id, c.name, l.loan_amount,
+       SUM(p.amount) AS total_paid,
+       ROUND((SUM(p.amount)/l.loan_amount)*100,2) AS repayment_percentage
+FROM Loans l
+JOIN Customers c ON l.customer_id = c.customer_id
+JOIN Payments p ON l.loan_id = p.loan_id
+GROUP BY l.loan_id, c.name, l.loan_amount
+HAVING repayment_percentage >= 80
+ORDER BY repayment_percentage DESC;
+-- City-wise Average Income vs Loan Amount
+SELECT c.city,
+       ROUND(AVG(c.income),2) AS avg_income,
+       ROUND(AVG(l.loan_amount),2) AS avg_loan_amount,
+       ROUND(AVG(l.loan_amount)/AVG(c.income),2) AS loan_to_income_ratio
+FROM Customers c
+JOIN Loans l ON c.customer_id = l.customer_id
+GROUP BY c.city
+ORDER BY loan_to_income_ratio DESC;
+-- Interest Revenue Projection (Expected Total Interest)
+SELECT l.loan_id, c.name,
+       l.loan_amount,
+       l.interest_rate,
+       ROUND((l.loan_amount * l.interest_rate * l.tenure_years)/100,2) AS projected_interest
+FROM Loans l
+JOIN Customers c ON l.customer_id = c.customer_id
+ORDER BY projected_interest DESC;
+-- Delayed Payments (Payments after due date assumption)
+SELECT p.payment_id, c.name, l.loan_id, p.payment_date, l.start_date
+FROM Payments p
+JOIN Loans l ON p.loan_id = l.loan_id
+JOIN Customers c ON l.customer_id = c.customer_id
+WHERE MONTH(p.payment_date) <> MONTH(l.start_date);
+-- Customer Loan Tenure Distribution
+SELECT tenure_years, COUNT(*) AS total_loans
+FROM Loans
+GROUP BY tenure_years
+ORDER BY tenure_years;
 
